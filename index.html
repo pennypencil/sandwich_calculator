@@ -12,6 +12,7 @@
     input[type=number] { width: 80px; font-size: 1.1em; padding: 5px; margin-bottom: 10px; text-align: center; }
     button { font-size: 1.1em; padding: 10px 20px; }
 
+
     /* Button wrapper for mobile */
     #buttonWrapper {
       display: flex;
@@ -45,12 +46,15 @@
   </div>
 
   <div id="sandwichStep"></div>
-  <input type="number" id="quantityInput" min="0" value="" autofocus>
+  <div id="inputButtonWrapper" style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;">
+  <input type="number" id="quantityInput" min="0" value="" style="width: 80%; max-width: 300px;" placeholder="Enter quantity">
   
-  <div id="buttonWrapper">
+  <div id="buttonWrapper" style="display: flex; flex-direction: column; width: 80%; max-width: 300px; gap: 10px;">
     <button id="nextBtn">Next</button>
     <button id="backBtn">Back</button>
   </div>
+</div>
+
 
   <div id="results"></div>
 
