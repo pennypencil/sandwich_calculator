@@ -5,34 +5,57 @@
   <title>Deli Sandwich Calculator - Mobile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* Basic styling */
     body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { margin-bottom: 15px; font-size: 1.5em; }
-    #sandwichStep { margin-bottom: 15px; font-size: 1.2em; }
-    input[type=number] { width: 80px; font-size: 1.1em; padding: 5px; margin-bottom: 10px; }
-    button { font-size: 1.1em; padding: 10px 20px; margin: 5px; }
+    h1 { margin-bottom: 15px; font-size: 1.5em; text-align: center; }
+    #sandwichStep { margin-bottom: 15px; font-size: 1.2em; text-align: center; }
+    input[type=number] { width: 80px; font-size: 1.1em; padding: 5px; margin-bottom: 10px; text-align: center; }
+    button { font-size: 1.1em; padding: 10px 20px; }
+
+    /* Button wrapper for mobile */
+    #buttonWrapper {
+      display: flex;
+      flex-direction: column; /* stack buttons vertically */
+      align-items: center;
+      width: 100%;
+      margin-top: 10px;
+    }
+    #backBtn {
+      margin-top: 10px;   /* space below Next button */
+      display: none;       /* hidden initially */
+    }
+    #nextBtn, #backBtn {
+      width: 80%;
+      max-width: 300px;
+    }
+
     #results { margin-top: 20px; font-weight: bold; font-size: 1.1em; white-space: pre-line; }
-    #progress { margin-bottom: 10px; font-size: 0.9em; color: gray; }
+    #progress { margin-bottom: 10px; font-size: 0.9em; color: gray; text-align: center; }
     #progressBarContainer { width: 100%; background-color: #eee; height: 15px; border-radius: 8px; margin-bottom: 15px; }
     #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 8px; transition: width 0.3s; }
+    * { box-sizing: border-box; } /* ensure padding doesn't break layout */
   </style>
 </head>
 <body>
   <h1>Deli Sandwich Calculator</h1>
+
   <div id="progress"></div>
   <div id="progressBarContainer">
     <div id="progressBar"></div>
   </div>
+
   <div id="sandwichStep"></div>
-  <input type="number" id="quantityInput" min="0" value="0">
-  <br>
-<div id="buttonWrapper">
-  <button id="nextBtn">Next</button>
-  <button id="backBtn">Back</button>
-</div>
+  <input type="number" id="quantityInput" min="0" value="" autofocus>
+  
+  <div id="buttonWrapper">
+    <button id="nextBtn">Next</button>
+    <button id="backBtn">Back</button>
+  </div>
 
   <div id="results"></div>
 
   <script>
+    // --- Data ---
     const sandwichKeys = [
       "hamSwissRye","tuna8Grain","chickenSaladSourdough","turkeyHavartiWrap","turkeySwissMultigrain",
       "turkeySwissPretzel","hamAmericanPretzel","eggSaladCroissant","tunaCroissant","chickenCaesarWrap",
@@ -90,21 +113,20 @@
     const progressBar = document.getElementById("progressBar");
     const resultsDiv = document.getElementById("results");
 
+    // --- Stepper ---
     function updateStep() {
       sandwichStep.textContent = sandwichNames[currentIndex];
-      quantityInput.value = quantities[sandwichKeys[currentIndex]] || ""; // start blank
-      quantityInput.focus(); // auto-focus so keyboard opens
+      quantityInput.value = quantities[sandwichKeys[currentIndex]] || ""; // blank if not entered
+      quantityInput.focus();
       progress.textContent = `Sandwich ${currentIndex + 1} of ${sandwichKeys.length}`;
       backBtn.style.display = currentIndex === 0 ? "none" : "inline-block";
       nextBtn.textContent = currentIndex === sandwichKeys.length -1 ? "Calculate" : "Next";
       progressBar.style.width = ((currentIndex) / (sandwichKeys.length -1)) * 100 + "%";
     }
 
-    // Trigger Next on Enter key
+    // Enter key triggers Next
     quantityInput.addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        nextBtn.click();
-      }
+      if (e.key === "Enter") nextBtn.click();
     });
 
     backBtn.addEventListener("click", () => {
@@ -119,7 +141,7 @@
         currentIndex++;
         updateStep();
       } else {
-        progressBar.style.width = "100%"; // full bar on calculate
+        progressBar.style.width = "100%";
         calculateTotals();
       }
     });
@@ -133,83 +155,71 @@
                   .trim();
     }
 
+    // --- Calculation ---
     function calculateTotals() {
-  let totals = {};
-  let taylorQty = quantities["taylorStreetSub"] || 0;
-  if(taylorQty > 0) {
-    let adjQty = Math.ceil(taylorQty / 3) * 3;
-    for(let ingredient in recipes["taylorStreetSub"]) {
-      totals[ingredient] = (totals[ingredient] || 0) + recipes["taylorStreetSub"][ingredient] * (adjQty /3);
+      let totals = {};
+      let taylorQty = quantities["taylorStreetSub"] || 0;
+      if(taylorQty > 0) {
+        let adjQty = Math.ceil(taylorQty / 3) * 3;
+        for(let ingredient in recipes["taylorStreetSub"]) {
+          totals[ingredient] = (totals[ingredient] || 0) + recipes["taylorStreetSub"][ingredient] * (adjQty /3);
+        }
+      }
+
+      for(let key of sandwichKeys) {
+        if(key === "taylorStreetSub") continue;
+        let qty = quantities[key] || 0;
+        for(let ingredient in recipes[key]) {
+          totals[ingredient] = (totals[ingredient] || 0) + recipes[key][ingredient] * qty;
+        }
+      }
+
+      let meats = {}, cheeses = {}, bread = {}, tomatoes = {};
+      for(let ingredient in totals) {
+        let amount = totals[ingredient];
+        if(["ham","turkey","roastBeef","cornedBeef","chickenSalad","eggSalad","tunaSalad","salami","pepperoni"].includes(ingredient)) {
+          meats[ingredient] = amount.toFixed(2) + " lbs";
+        } else if(ingredient === "grilledChicken") {
+          meats[ingredient] = amount + " pieces";
+        } else if(["american","havarti","cheddar","swiss","provoloneSlices","salamiSlices"].includes(ingredient)) {
+          cheeses[ingredient] = Math.ceil(amount) + " slices";
+        } else if(["rye","sourdough","multigrain","croissant","pretzel"].includes(ingredient)) {
+          let whole = Math.ceil(amount / conversions[ingredient].perWhole);
+          bread[ingredient] = amount + " (" + whole + " " + conversions[ingredient].wholeName + ")";
+        } else if(ingredient === "frenchBread" || ingredient === "italian") {
+          bread[ingredient] = amount;
+        } else if(ingredient === "tomatoes") {
+          let whole = Math.ceil(amount / conversions.tomatoes.perWhole);
+          tomatoes["Tomatoes"] = amount + " slices (" + whole + " whole tomatoes)";
+        }
+      }
+
+      // Build output
+      let output = "MEATS:\n";
+      for(let key in meats) output += capitalizeLabel(key) + ": " + meats[key] + "\n";
+      output += "\nCHEESES:\n";
+      for(let key in cheeses) output += capitalizeLabel(key) + ": " + cheeses[key] + "\n";
+      output += "\nBREAD:\n";
+      for(let key in bread) output += capitalizeLabel(key) + ": " + bread[key] + "\n";
+      output += "\nTOMATOES:\n";
+      for(let key in tomatoes) output += capitalizeLabel(key) + ": " + tomatoes[key] + "\n";
+
+      resultsDiv.textContent = output;
+
+      // --- Back button from results ---
+      backBtn.style.display = "inline-block";
+      backBtn.onclick = goBackFromResults;
     }
-  }
 
-  for(let key of sandwichKeys) {
-    if(key === "taylorStreetSub") continue;
-    let qty = quantities[key] || 0;
-    for(let ingredient in recipes[key]) {
-      totals[ingredient] = (totals[ingredient] || 0) + recipes[key][ingredient] * qty;
-    }
-  }
-
-  let meats = {}, cheeses = {}, bread = {}, tomatoes = {};
-  for(let ingredient in totals) {
-    let amount = totals[ingredient];
-    if(["ham","turkey","roastBeef","cornedBeef","chickenSalad","eggSalad","tunaSalad","salami","pepperoni"].includes(ingredient)) {
-      meats[ingredient] = amount.toFixed(2) + " lbs";
-    } else if(ingredient === "grilledChicken") {
-      meats[ingredient] = amount + " pieces";
-    } else if(["american","havarti","cheddar","swiss","provoloneSlices","salamiSlices"].includes(ingredient)) {
-      cheeses[ingredient] = Math.ceil(amount) + " slices";
-    } else if(["rye","sourdough","multigrain","croissant","pretzel"].includes(ingredient)) {
-      let whole = Math.ceil(amount / conversions[ingredient].perWhole);
-      bread[ingredient] = amount + " (" + whole + " " + conversions[ingredient].wholeName + ")";
-    } else if(ingredient === "frenchBread" || ingredient === "italian") {
-      bread[ingredient] = amount;
-    } else if(ingredient === "tomatoes") {
-      let whole = Math.ceil(amount / conversions.tomatoes.perWhole);
-      tomatoes["Tomatoes"] = amount + " slices (" + whole + " whole tomatoes)";
-    }
-  }
-
-  // Build output
-  let output = "MEATS:\n";
-  for(let key in meats) output += capitalizeLabel(key) + ": " + meats[key] + "\n";
-  output += "\nCHEESES:\n";
-  for(let key in cheeses) output += capitalizeLabel(key) + ": " + cheeses[key] + "\n";
-  output += "\nBREAD:\n";
-  for(let key in bread) output += capitalizeLabel(key) + ": " + bread[key] + "\n";
-  output += "\nTOMATOES:\n";
-  for(let key in tomatoes) output += capitalizeLabel(key) + ": " + tomatoes[key] + "\n";
-
-  resultsDiv.textContent = output;
-
-    // Show Back button on results page
-  backBtn.style.display = "inline-block"; 
-
-  backBtn.onclick = () => {
-    // Restore stepper UI
-    sandwichStep.style.display = "block";
-    quantityInput.style.display = "inline-block";
-    nextBtn.style.display = "inline-block";
-    progress.style.display = "block";
-    document.getElementById("progressBarContainer").style.display = "block";
-    resultsDiv.textContent = "";
-
-    // Start at last sandwich step
-    currentIndex = sandwichKeys.length - 1;
-
-    // Reassign Back button for normal stepper behavior
-    backBtn.onclick = () => {
-      quantities[sandwichKeys[currentIndex]] = parseInt(quantityInput.value) || 0;
-      if (currentIndex > 0) currentIndex--;
+    function goBackFromResults() {
+      sandwichStep.style.display = "block";
+      quantityInput.style.display = "inline-block";
+      nextBtn.style.display = "inline-block";
+      progress.style.display = "block";
+      document.getElementById("progressBarContainer").style.display = "block";
+      resultsDiv.textContent = "";
       updateStep();
-    };
-
-    updateStep();
-  };
-
-}
-
+    }
 
     updateStep();
   </script>
